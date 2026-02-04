@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Absensi Kelas</title>
+    
+    <!-- Font & Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- SheetJS untuk export Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <style>
+        /* CSS Variables untuk Theme */
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #06d6a0;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --container-bg: #ffffff;
+            --border-color: #e2e8f0;
+        }
+        
+        /* Theme Pink (Mode Cewe) */
+        .theme-pink {
+            --primary-color: #ff6b9d;
+            --secondary-color: #ff8fab;
+            --bg-color: #fff0f3;
+            --text-color: #590d22;
+            --container-bg: #ffffff;
+            --border-color: #ffccd5;
+            --accent-color: #ff4d6d;
+        }
+        
+        /* Theme Blue (Mode Cowo) */
+        .theme-blue {
+            --primary-color: #4361ee;
+            --secondary-color: #4cc9f0;
+            --bg-color: #f0f4ff;
+            --text-color: #1d3557;
+            --container-bg: #ffffff;
+            --border-color: #caf0f8;
+            --accent-color: #3a86ff;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            transition: all 0.5s ease;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        /* ==================== */
+        /* ANIMASI BACKGROUND FIXED */
+        /* ==================== */
+        .floating-animations {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1; /* Di belakang konten utama */
+            overflow: hidden;
+        }
+        
+        /* Animasi untuk Mode Cewe (Hati) */
+        .floating-heart {
+            position: absolute;
+            color: rgba(255, 77, 109, 0.15); /* Sangat transparan */
+            font-size: 24px;
+            animation: floatHeart 25s linear infinite;
+            opacity: 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        @keyframes floatHeart {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.2;
+            }
+            90% {
+                opacity: 0.2;
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        /* Animasi untuk Mode Cowo (Emoji) */
+        .floating-emoji {
+            position: absolute;
+            font-size: 28px;
+            animation: floatEmoji 20s linear infinite;
+            opacity: 0;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        }
+        
+        @keyframes floatEmoji {
+            0% {
+                transform: translateY(100vh) translateX(0) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.15;
+            }
+            90% {
+                opacity: 0.15;
+            }
+            100% {
+                transform: translateY(-100px) translateX(100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        /* ==================== */
+        /* LOADING SCREEN STYLES */
+        /* ==================== */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.8s ease;
+        }
+        
+        .loading-background {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0.3;
+        }
+        
+        .loading-content {
+            text-align: center;
+            z-index: 2;
+            padding: 30px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .loading-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .loading-logo {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 30px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .loading-bar-container {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            margin: 30px 0 15px;
+            overflow: hidden;
+        }
+        
+        .loading-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #ff9a9e, #fad0c4);
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .loading-percent {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        /* ==================== */
+        /* MODE SELECTION SCREEN */
+        /* ==================== */
+        #mode-selection {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9998;
+            background-size: cover;
+            background-position: center;
+            padding: 20px;
+        }
+        
+        .mode-title {
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: white;
+            text-align: center;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        .mode-subtitle {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 50px;
+            text-align: center;
+            max-width: 600px;
+        }
+        
+        .mode-container {
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 900px;
+        }
+        
+        .mode-card {
+            width: 300px;
+            height: 400px;
+            border-radius: 25px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        
+        .mode-card:hover {
+            transform: translateY(-15px) scale(1.03);
+            box-shadow: 0 30px 50px rgba(0,0,0,0.4);
+        }
+        
+        .mode-card-female {
+            background: linear-gradient(135deg, #ff6b9d, #ff8fab);
+        }
+        
+        .mode-card-male {
+            background: linear-gradient(135deg, #4361ee, #4cc9f0);
+        }
+        
+        .mode-icon {
+            width: 150px;
+            height: 150px;
+            margin: 50px auto 30px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        
+        .mode-name {
+            text-align: center;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .mode-desc {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.9);
+            padding: 0 20px;
+            font-size: 1rem;
+        }
+        
+        /* ==================== */
+        /* MAIN APP STYLES */
+        /* ==================== */
+        .app-container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            display: none; /* Sembunyikan dulu sampai mode dipilih */
+            position: relative;
+            z-index: 1; /* Di atas animasi background */
+        }
+        
+        .page-container {
+            background: var(--container-bg);
+            border-radius: 25px;
+            padding: 35px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border: 2px solid var(--border-color);
+            position: relative;
+            z-index: 2; /* Di atas animasi */
+            margin-bottom: 20px;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .logo-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 35px;
+            color: white;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        h1 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-color);
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            color: var(--text-color);
+            opacity: 0.7;
+            font-size: 15px;
+            font-weight: 400;
+        }
+        
+        /* Button Styles */
+        .btn-container {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            margin-top: 20px;
+        }
+        
+        .main-btn {
+            padding: 20px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+        }
+        
+        .main-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .main-btn i {
+            font-size: 20px;
+        }
+        
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 500;
+            color: var(--text-color);
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 15px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+            background: var(--container-bg);
+            color: var(--text-color);
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.15);
+        }
+        
+        /* Error/Warning Message */
+        .warning-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10000;
+            display: none;
+        }
+        
+        .warning-box {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            max-width: 400px;
+            width: 90vw;
+            animation: popIn 0.4s ease-out;
+        }
+        
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .warning-image {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 25px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        
+        .warning-text {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .close-warning {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        
+        /* Success Message */
+        .success-container {
+            text-align: center;
+            padding: 40px 0;
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        .success-image {
+            width: 250px;
+            height: 250px;
+            margin: 0 auto 30px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            animation: bounce 1s infinite alternate;
+        }
+        
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-20px); }
+        }
+        
+        .success-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 15px;
+        }
+        
+        /* Table Styles */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 15px;
+            border: 2px solid var(--border-color);
+            margin-top: 25px;
+            margin-bottom: 25px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        
+        thead {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        }
+        
+        th {
+            padding: 18px;
+            text-align: left;
+            font-weight: 600;
+            color: white;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+        
+        tbody tr {
+            transition: all 0.3s ease;
+        }
+        
+        tbody tr:hover {
+            background: rgba(67, 97, 238, 0.05);
+        }
+        
+        .export-btn {
+            padding: 15px 25px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px auto;
+            transition: all 0.3s ease;
+        }
+        
+        .export-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Back Button */
+        .back-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--container-bg);
+            color: var(--text-color);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .back-btn:hover {
+            background: var(--bg-color);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        /* Music Player */
+        .music-player {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50px;
+            padding: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            border: 2px solid var(--border-color);
+        }
+        
+        .music-info {
+            max-width: 200px;
+        }
+        
+        .music-title {
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 3px;
+        }
+        
+        .music-artist {
+            font-size: 12px;
+            color: var(--text-color);
+            opacity: 0.7;
+        }
+        
+        .music-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .music-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .music-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        .volume-slider {
+            width: 100px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .mode-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .mode-card {
+                width: 280px;
+                height: 350px;
+            }
+            
+            .loading-title {
+                font-size: 2rem;
+            }
+            
+            .mode-title {
+                font-size: 2rem;
+            }
+            
+            .music-player {
+                left: 20px;
+                right: 20px;
+                justify-content: center;
+            }
+            
+            .floating-heart {
+                font-size: 20px;
+            }
+            
+            .floating-emoji {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ==================== -->
+  
+    <!-- ==================== -->
+    <div class="floating-animations" id="floating-animations"></div>
+
+    <!-- ==================== -->
+    <!-- LOADING SCREEN -->
+    <!-- ==================== -->
+    <div id="loading-screen">
+        <!-- Background image bisa diganti -->
+        <div class="loading-background" id="loading-bg"></div>
+        <div class="loading-content">
+            <div class="loading-logo" id="loading-logo"></div>
+            <h1 class="loading-title">SISTEM ABSENSI KELAS</h1>
+            <div class="loading-bar-container">
+                <div class="loading-bar" id="loading-bar"></div>
+            </div>
+            <div class="loading-percent" id="loading-percent">0%</div>
+        </div>
+    </div>
+
+    <!-- ==================== -->
+    <!-- MODE SELECTION SCREEN -->
+    <!-- ==================== -->
+    <div id="mode-selection" style="display: none;">
+        <!-- Background image bisa diganti -->
+        <div class="loading-background" id="mode-bg"></div>
+        <h1 class="mode-title">SEBELUM MELANJUTKAN</h1>
+        <p class="mode-subtitle">Pilih mode terlebih dahulu untuk pengalaman yang lebih personal</p>
+        
+        <div class="mode-container">
+            <div class="mode-card mode-card-female" onclick="selectMode('female')">
+                <div class="mode-icon" id="female-icon"></div>
+                <div class="mode-name">MODE CEWE</div>
+                <div class="mode-desc">Tema pink romantis dengan animasi hati dan musik spesial</div>
+            </div>
+            
+            <div class="mode-card mode-card-male" onclick="selectMode('male')">
+                <div class="mode-icon" id="male-icon"></div>
+                <div class="mode-name">MODE COWO</div>
+                <div class="mode-desc">Tema maskulin dengan animasi emoji dan musik keren</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== -->
+    <!-- MUSIC PLAYER -->
+    <!-- ==================== -->
+    <div class="music-player" id="music-player" style="display: none;">
+        <div class="music-info">
+            <div class="music-title" id="music-title">Loading...</div>
+            <div class="music-artist" id="music-artist">Sistem Absensi</div>
+        </div>
+        <div class="music-controls">
+            <button class="music-btn" onclick="togglePlay()" id="play-btn">
+                <i class="fas fa-play"></i>
+            </button>
+            <button class="music-btn" onclick="stopMusic()">
+                <i class="fas fa-stop"></i>
+            </button>
+            <input type="range" min="0" max="100" value="50" class="volume-slider" id="volume-slider" oninput="changeVolume(this.value)">
+        </div>
+    </div>
+
+    <!-- ==================== -->
+    <!-- WARNING MESSAGES -->
+    <!-- ==================== -->
+    <div class="warning-container" id="warning-container">
+        <div class="warning-box">
+            <div class="warning-image" id="warning-image"></div>
+            <div class="warning-text" id="warning-text">Kamu belum mengisi kolom nama</div>
+            <button class="close-warning" onclick="closeWarning()">MENGERTI</button>
+        </div>
+    </div>
+
+    <!-- ==================== -->
+    <!-- MAIN APP -->
+    <!-- ==================== -->
+    <div class="app-container" id="app-container">
+        <!-- Halaman Utama -->
+        <div id="home-page" class="page-container">
+            <div class="header">
+                <div class="logo-icon">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <h1>SISTEM ABSENSI KELAS</h1>
+                <p class="subtitle" id="theme-subtitle">SMK - Presensi Digital</p>
+            </div>
+            
+            <div class="btn-container">
+                <button class="main-btn" onclick="showPage('absen-page')">
+                    <i class="fas fa-user-check"></i>
+                    ABSEN KEHADIRAN
+                </button>
+                <button class="main-btn" onclick="showPage('laporan-page')">
+                    <i class="fas fa-chart-bar"></i>
+                    LAPORAN REKAP KEHADIRAN
+                </button>
+            </div>
+        </div>
+
+        <!-- Halaman Form Absensi -->
+        <div id="absen-page" class="page-container" style="display: none;">
+            <div class="header">
+                <h2>FORM ABSEN KEHADIRAN</h2>
+                <p class="subtitle">Isi data kehadiran dengan benar</p>
+            </div>
+
+            <form id="absen-form">
+                <div class="form-group">
+                    <label for="nama"><i class="fas fa-user"></i> NAMA</label>
+                    <input type="text" id="nama" name="nama" class="form-control" placeholder="Masukkan nama lengkap">
+                </div>
+
+                <div class="form-group">
+                    <label for="kelas"><i class="fas fa-graduation-cap"></i> KELAS</label>
+                    <select id="kelas" name="kelas" class="form-control">
+                        <option value="">-- Pilih Kelas --</option>
+                        <option value="X">Kelas X</option>
+                        <option value="XI">Kelas XI</option>
+                        <option value="XII">Kelas XII</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-calendar-day"></i> HARI</label>
+                    <input type="text" id="hari" name="hari" class="form-control" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-clock"></i> JAM</label>
+                    <input type="text" id="jam" name="jam" class="form-control" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label for="jurusan"><i class="fas fa-briefcase"></i> JURUSAN</label>
+                    <select id="jurusan" name="jurusan" class="form-control">
+                        <option value="">-- Pilih Jurusan --</option>
+                        <option value="Bisnis Daring & Pemasaran">Bisnis Daring & Pemasaran</option>
+                        <option value="Otomatisasi Tata Kelola Perkantoran">Otomatisasi Tata Kelola Perkantoran</option>
+                        <option value="Akuntansi Keuangan & Lembaga">Akuntansi Keuangan & Lembaga</option>
+                        <option value="Teknik Komputer & Jaringan">Teknik Komputer & Jaringan</option>
+                        <option value="Teknik Bisnis Sepeda Motor">Teknik Bisnis Sepeda Motor</option>
+                        <option value="Busana Butik">Busana Butik</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-clipboard-check"></i> KETERANGAN</label>
+                    <div class="radio-group" style="display: flex; gap: 15px; flex-wrap: wrap;">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="radio" name="keterangan" value="Hadir">
+                            <span>Hadir</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="radio" name="keterangan" value="Izin">
+                            <span>Izin</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="radio" name="keterangan" value="Sakit">
+                            <span>Sakit</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="radio" name="keterangan" value="Alpa">
+                            <span>Alpa</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="foto"><i class="fas fa-camera"></i> FOTO BUKTI</label>
+                    <input type="file" id="foto" name="foto" accept="image/*" class="form-control">
+                </div>
+
+                <button type="button" onclick="submitAbsensi()" class="main-btn" style="margin-top: 20px;">
+                    <i class="fas fa-paper-plane"></i>
+                    KIRIM ABSENSI
+                </button>
+            </form>
+
+            <!-- Success State -->
+            <div id="success-state" class="success-container" style="display: none;">
+                <div class="success-image" id="success-image"></div>
+                <h3 class="success-title">TERIMA KASIH!</h3>
+                <p class="subtitle">Absensi Anda telah berhasil dikirim</p>
+                
+                <div class="btn-container">
+                    <button class="main-btn" onclick="showPage('laporan-page')">
+                        <i class="fas fa-chart-bar"></i>
+                        LIHAT LAPORAN
+                    </button>
+                    <button class="main-btn" onclick="showPage('home-page')">
+                        <i class="fas fa-home"></i>
+                        KEMBALI KE HALAMAN UTAMA
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Halaman Laporan -->
+        <div id="laporan-page" class="page-container" style="display: none;">
+            <div class="header">
+                <h2>REKAP KEHADIRAN</h2>
+                <p class="subtitle">Data presensi terbaru</p>
+                <button class="export-btn" onclick="exportToExcel()">
+                    <i class="fas fa-file-excel"></i>
+                    DOWNLOAD EXCEL
+                </button>
+            </div>
+
+            <div class="table-container">
+                <table id="laporan-table">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Nama</th>
+                            <th>Kelas</th>
+                            <th>Jurusan</th>
+                            <th>Waktu</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="laporan-body">
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
+                                <i class="fas fa-clipboard-list" style="font-size: 48px; margin-bottom: 15px; display: block;"></i>
+                                Belum ada data kehadiran
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <button class="back-btn" onclick="showPage('home-page')">
+                <i class="fas fa-arrow-left"></i>
+                KEMBALI KE HALAMAN UTAMA
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== -->
+    <!-- AUDIO ELEMENTS -->
+    <!-- ==================== -->
+    <audio id="bg-music" loop>
+        <source src="" type="audio/mpeg">
+    </audio>
+
+    <script>
+        // ==================== //
+        // KONFIGURASI GAMBAR CUSTOM //
+        // ==================== //
+        
+        // CONFIGURATION - SEMUA GAMBAR BISA DIGANTI DARI SINI
+        const config = {
+            // Loading screen images
+            loading: {
+                background: 'swg.jpg', // Background loading
+                logo: 'logo.png' // Logo loading
+            },
+            
+            // Mode selection images
+            modeSelection: {
+                background: 'swg2.jpg', // Background mode selection
+                femaleIcon: 'sm.jpeg', // Icon mode cewe
+                maleIcon: 'wiwi.jpg' // Icon mode cowo
+            },
+            
+            // Warning images (saat ada field yang kosong)
+            warnings: {
+                nama: 'https://cdn-icons-png.flaticon.com/512/179/179429.png', // Nama kosong
+                kelas: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png', // Kelas kosong
+                jurusan: 'https://cdn-icons-png.flaticon.com/512/3135/3135753.png', // Jurusan kosong
+                keterangan: 'https://cdn-icons-png.flaticon.com/512/1828/1828843.png', // Keterangan kosong
+                foto: 'https://cdn-icons-png.flaticon.com/512/709/709722.png' // Foto kosong
+            },
+            
+            // Success image
+            success: 'https://cdn-icons-png.flaticon.com/512/190/190411.png', // Gambar sukses
+            
+            // Music untuk setiap mode
+            music: {
+                female: 'https://assets.mixkit.co/music/preview/mixkit-school-days-149.mp3', // Lagu mode cewe
+                male: 'mul.mp3' // Lagu mode cowo
+            },
+            
+            // Music info
+            musicInfo: {
+                female: { title: 'Beautiful Day', artist: 'Chill Vibes' },
+                male: { title: 'Mulyono Speed Up', artist: 'Bakapk Mulyono' }
+            }
+        };
+        
+        // ==================== //
+        // VARIABLES GLOBAL //
+        // ==================== //
+        let currentMode = null;
+        let currentTheme = 'theme-pink';
+        let music = document.getElementById('bg-music');
+        let isMusicPlaying = false;
+        let floatingInterval = null;
+        
+        // ==================== //
+        // LOADING SCREEN //
+        // ==================== //
+        window.onload = function() {
+            // Set gambar custom untuk loading
+            document.getElementById('loading-bg').style.backgroundImage = `url('${config.loading.background}')`;
+            document.getElementById('loading-logo').style.backgroundImage = `url('${config.loading.logo}')`;
+            
+            // Simulasikan loading progress
+            simulateLoading();
+        };
+        
+        function simulateLoading() {
+            let progress = 0;
+            const loadingBar = document.getElementById('loading-bar');
+            const loadingPercent = document.getElementById('loading-percent');
+            
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 100) progress = 100;
+                
+                loadingBar.style.width = progress + '%';
+                loadingPercent.textContent = Math.floor(progress) + '%';
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        // Sembunyikan loading, tampilkan mode selection
+                        document.getElementById('loading-screen').style.opacity = '0';
+                        setTimeout(() => {
+                            document.getElementById('loading-screen').style.display = 'none';
+                            showModeSelection();
+                        }, 800);
+                    }, 500);
+                }
+            }, 200);
+        }
+        
+        // ==================== //
+        // MODE SELECTION //
+        // ==================== //
+        function showModeSelection() {
+            // Set gambar custom untuk mode selection
+            document.getElementById('mode-bg').style.backgroundImage = `url('${config.modeSelection.background}')`;
+            document.getElementById('female-icon').style.backgroundImage = `url('${config.modeSelection.femaleIcon}')`;
+            document.getElementById('male-icon').style.backgroundImage = `url('${config.modeSelection.maleIcon}')`;
+            
+            // Tampilkan mode selection
+            document.getElementById('mode-selection').style.display = 'flex';
+        }
+        
+        function selectMode(mode) {
+            currentMode = mode;
+            
+            // Apply theme berdasarkan mode
+            if (mode === 'female') {
+                document.body.classList.remove('theme-blue');
+                document.body.classList.add('theme-pink');
+                currentTheme = 'theme-pink';
+                document.getElementById('theme-subtitle').textContent = 'Mode Cewe - Tema Pink Romantis';
+                startFloatingHearts();
+            } else {
+                document.body.classList.remove('theme-pink');
+                document.body.classList.add('theme-blue');
+                currentTheme = 'theme-blue';
+                document.getElementById('theme-subtitle').textContent = 'Mode Cowo - Tema Maskulin Keren';
+                startFloatingEmojis();
+            }
+            
+            // Setup music
+            setupMusic(mode);
+            
+            // Sembunyikan mode selection dengan animasi
+            document.getElementById('mode-selection').style.opacity = '0';
+            document.getElementById('mode-selection').style.transform = 'scale(0.9)';
+            
+            setTimeout(() => {
+                document.getElementById('mode-selection').style.display = 'none';
+                
+                // Tampilkan main app
+                document.getElementById('app-container').style.display = 'block';
+                showPage('home-page');
+                
+                // Tampilkan music player
+                document.getElementById('music-player').style.display = 'flex';
+                
+                // Mulai musik
+                playMusic();
+            }, 500);
+        }
+        
+        // ==================== //
+        // FLOATING ANIMATIONS - FIXED //
+        // ==================== //
+        function startFloatingHearts() {
+            clearInterval(floatingInterval);
+            const container = document.getElementById('floating-animations');
+            container.innerHTML = '';
+            
+            // Buat 15 hati dengan posisi acak
+            for (let i = 0; i < 15; i++) {
+                createHeart();
+            }
+            
+            // Tambah hati baru setiap 2 detik
+            floatingInterval = setInterval(() => {
+                createHeart();
+            }, 2000);
+            
+            function createHeart() {
+                const heart = document.createElement('div');
+                heart.className = 'floating-heart';
+                heart.innerHTML = '❤️';
+                heart.style.left = Math.random() * 100 + 'vw';
+                heart.style.fontSize = (Math.random() * 20 + 15) + 'px';
+                heart.style.animationDuration = (Math.random() * 15 + 20) + 's'; // 20-35 detik
+                heart.style.animationDelay = Math.random() * 5 + 's';
+                heart.style.opacity = '0';
+                
+                container.appendChild(heart);
+                
+                // Hapus setelah animasi selesai
+                setTimeout(() => {
+                    if (heart.parentNode) {
+                        heart.remove();
+                    }
+                }, 40000);
+            }
+        }
+        
+        function startFloatingEmojis() {
+            clearInterval(floatingInterval);
+            const container = document.getElementById('floating-animations');
+            container.innerHTML = '';
+            
+            const emojis = ['🌴', '🐵', '🚨', '🗿', '🔥', '⚡', '🎯', '💎'];
+            
+            // Buat 12 emoji dengan posisi acak
+            for (let i = 0; i < 12; i++) {
+                createEmoji();
+            }
+            
+            // Tambah emoji baru setiap 2.5 detik
+            floatingInterval = setInterval(() => {
+                createEmoji();
+            }, 2500);
+            
+            function createEmoji() {
+                const emoji = document.createElement('div');
+                emoji.className = 'floating-emoji';
+                emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                emoji.style.left = Math.random() * 100 + 'vw';
+                emoji.style.fontSize = (Math.random() * 25 + 20) + 'px';
+                emoji.style.animationDuration = (Math.random() * 12 + 18) + 's'; // 18-30 detik
+                emoji.style.animationDelay = Math.random() * 3 + 's';
+                emoji.style.opacity = '0';
+                
+                container.appendChild(emoji);
+                
+                // Hapus setelah animasi selesai
+                setTimeout(() => {
+                    if (emoji.parentNode) {
+                        emoji.remove();
+                    }
+                }, 35000);
+            }
+        }
+        
+        // ==================== //
+        // MUSIC SYSTEM //
+        // ==================== //
+        function setupMusic(mode) {
+            const musicSrc = mode === 'female' ? config.music.female : config.music.male;
+            const musicInfo = mode === 'female' ? config.musicInfo.female : config.musicInfo.male;
+            
+            // Set music source
+            music.src = musicSrc;
+            
+            // Set music info
+            document.getElementById('music-title').textContent = musicInfo.title;
+            document.getElementById('music-artist').textContent = musicInfo.artist;
+            
+            // Set volume
+            music.volume = 0.5;
+        }
+        
+        function playMusic() {
+            music.play().then(() => {
+                isMusicPlaying = true;
+                document.getElementById('play-btn').innerHTML = '<i class="fas fa-pause"></i>';
+            }).catch(e => {
+                console.log("Autoplay prevented:", e);
+                // User interaction required
+                document.addEventListener('click', function firstClick() {
+                    music.play();
+                    isMusicPlaying = true;
+                    document.getElementById('play-btn').innerHTML = '<i class="fas fa-pause"></i>';
+                    document.removeEventListener('click', firstClick);
+                });
+            });
+        }
+        
+        function togglePlay() {
+            if (isMusicPlaying) {
+                music.pause();
+                document.getElementById('play-btn').innerHTML = '<i class="fas fa-play"></i>';
+            } else {
+                music.play();
+                document.getElementById('play-btn').innerHTML = '<i class="fas fa-pause"></i>';
+            }
+            isMusicPlaying = !isMusicPlaying;
+        }
+        
+        function stopMusic() {
+            music.pause();
+            music.currentTime = 0;
+            isMusicPlaying = false;
+            document.getElementById('play-btn').innerHTML = '<i class="fas fa-play"></i>';
+        }
+        
+        function changeVolume(value) {
+            music.volume = value / 100;
+        }
+        
+        // ==================== //
+        // PAGE NAVIGATION //
+        // ==================== //
+        function showPage(pageId) {
+            // Sembunyikan semua halaman
+            document.querySelectorAll('.page-container').forEach(page => {
+                page.style.display = 'none';
+            });
+            
+            // Tampilkan halaman yang dipilih
+            document.getElementById(pageId).style.display = 'block';
+            
+            // Update tanggal dan jam jika di halaman absen
+            if (pageId === 'absen-page') {
+                updateTanggalJam();
+            }
+            
+            // Load data laporan jika di halaman laporan
+            if (pageId === 'laporan-page') {
+                loadLaporanData();
+            }
+        }
+        
+        function updateTanggalJam() {
+            const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const now = new Date();
+            const day = days[now.getDay()];
+            const time = now.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+            
+            document.getElementById('hari').value = `${day}, ${now.toLocaleDateString('id-ID')}`;
+            document.getElementById('jam').value = time;
+        }
+        
+        // ==================== //
+        // FORM VALIDATION & WARNINGS //
+        // ==================== //
+        function showWarning(field) {
+            let warningText = '';
+            let warningImage = '';
+            
+            // Set pesan dan gambar berdasarkan field yang kosong
+            switch(field) {
+                case 'nama':
+                    warningText = 'Kamu belum mengisi kolom NAMA';
+                    warningImage = config.warnings.nama;
+                    break;
+                case 'kelas':
+                    warningText = 'Kamu belum memilih KELAS';
+                    warningImage = config.warnings.kelas;
+                    break;
+                case 'jurusan':
+                    warningText = 'Kamu belum memilih JURUSAN';
+                    warningImage = config.warnings.jurusan;
+                    break;
+                case 'keterangan':
+                    warningText = 'Kamu belum memilih KETERANGAN';
+                    warningImage = config.warnings.keterangan;
+                    break;
+                case 'foto':
+                    warningText = 'Kamu belum mengupload FOTO BUKTI';
+                    warningImage = config.warnings.foto;
+                    break;
+            }
+            
+            // Set warning content
+            document.getElementById('warning-text').textContent = warningText;
+            document.getElementById('warning-image').style.backgroundImage = `url('${warningImage}')`;
+            
+            // Tampilkan warning
+            document.getElementById('warning-container').style.display = 'block';
+        }
+        
+        function closeWarning() {
+            document.getElementById('warning-container').style.display = 'none';
+        }
+        
+        function submitAbsensi() {
+            // Validasi form
+            const nama = document.getElementById('nama').value.trim();
+            const kelas = document.getElementById('kelas').value;
+            const jurusan = document.getElementById('jurusan').value;
+            const keterangan = document.querySelector('input[name="keterangan"]:checked');
+            const foto = document.getElementById('foto').files[0];
+            
+            if (!nama) {
+                showWarning('nama');
+                return;
+            }
+            
+            if (!kelas) {
+                showWarning('kelas');
+                return;
+            }
+            
+            if (!jurusan) {
+                showWarning('jurusan');
+                return;
+            }
+            
+            if (!keterangan) {
+                showWarning('keterangan');
+                return;
+            }
+            
+            if (!foto) {
+                showWarning('foto');
+                return;
+            }
+            
+            // Simpan data ke localStorage
+            const absensiData = {
+                id: Date.now(),
+                nama: nama,
+                kelas: kelas,
+                jurusan: jurusan,
+                keterangan: keterangan.value,
+                waktu: new Date().toLocaleString('id-ID'),
+                tanggal: new Date().toISOString().split('T')[0]
+            };
+            
+            let dataList = JSON.parse(localStorage.getItem('absensiList')) || [];
+            dataList.unshift(absensiData); // Tambah di awal
+            localStorage.setItem('absensiList', JSON.stringify(dataList));
+            
+            // Tampilkan success state
+            document.getElementById('absen-form').style.display = 'none';
+            document.getElementById('success-state').style.display = 'block';
+            
+            // Set gambar sukses
+            document.getElementById('success-image').style.backgroundImage = `url('${config.success}')`;
+            
+            // Reset form
+            document.getElementById('absen-form').reset();
+        }
+        
+        // ==================== //
+        // LAPORAN & EXPORT EXCEL //
+        // ==================== //
+        function loadLaporanData() {
+            const dataList = JSON.parse(localStorage.getItem('absensiList')) || [];
+            const tbody = document.getElementById('laporan-body');
+            
+            if (dataList.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
+                            <i class="fas fa-clipboard-list" style="font-size: 48px; margin-bottom: 15px; display: block;"></i>
+                            Belum ada data kehadiran
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = '';
+            dataList.forEach((data, index) => {
+                let statusColor = '';
+                switch(data.keterangan) {
+                    case 'Hadir': statusColor = '#06d6a0'; break;
+                    case 'Izin': statusColor = '#ffd166'; break;
+                    case 'Sakit': statusColor = '#118ab2'; break;
+                    case 'Alpa': statusColor = '#ef476f'; break;
+                }
+                
+                html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td><strong>${data.nama}</strong></td>
+                        <td>${data.kelas}</td>
+                        <td>${data.jurusan}</td>
+                        <td>${data.waktu}</td>
+                        <td>
+                            <span style="background: ${statusColor}; color: white; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">
+                                ${data.keterangan}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+        }
+        
+        function exportToExcel() {
+            const dataList = JSON.parse(localStorage.getItem('absensiList')) || [];
+            
+            if (dataList.length === 0) {
+                alert('Tidak ada data untuk diexport!');
+                return;
+            }
+            
+            // Siapkan data untuk Excel
+            const wsData = [
+                ['NO', 'NAMA', 'KELAS', 'JURUSAN', 'KETERANGAN', 'TANGGAL', 'WAKTU'],
+                ...dataList.map((item, index) => [
+                    index + 1,
+                    item.nama,
+                    item.kelas,
+                    item.jurusan,
+                    item.keterangan,
+                    item.tanggal,
+                    item.waktu
+                ])
+            ];
+            
+            // Buat worksheet
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            
+            // Buat workbook
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Absensi Kelas");
+            
+            // Export ke file
+            const fileName = `absensi_kelas_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            
+            // Tampilkan notifikasi
+            alert(`Data berhasil diexport ke ${fileName}`);
+        }
+        
+        // ==================== //
+        // UTILITY FUNCTIONS //
+        // ==================== //
+        document.addEventListener('click', function() {
+            // Coba play musik jika belum playing (untuk bypass autoplay restrictions)
+            if (!isMusicPlaying && currentMode) {
+                music.play().then(() => {
+                    isMusicPlaying = true;
+                    document.getElementById('play-btn').innerHTML = '<i class="fas fa-pause"></i>';
+                }).catch(e => console.log("Music autoplay prevented"));
+            }
+        });
+    </script>
+</body>
+</html>
